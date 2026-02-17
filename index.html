@@ -154,7 +154,7 @@
     <!-- ── 쓰기 뷰 ────────────────────────────────────────── -->
     <section id="view-write" class="view hidden">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-black">새로운 기록</h2>
+        <h2 id="write-title" class="text-xl font-black">새로운 기록</h2>
         <button onclick="router.go('list')" aria-label="닫기" class="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
@@ -245,6 +245,7 @@
     let allPosts       = [];
     let activeMood     = null;
     let activeCategory = null;
+    let editMode       = null; // null | { id: string, sha: string, originalDate: string, originalImage: string }
 
     /* ═══════════════════════════════════════════════════════
        UTILS
@@ -346,7 +347,12 @@
 
         if (view === 'list')   actions.fetchList();
         if (view === 'detail') actions.fetchDetail(id);
-        if (view === 'write')  { renderMoodButtons(); activeMood = null; loadDraft(); }
+        if (view === 'write')  {
+          editMode = null;
+          renderMoodButtons(); activeMood = null; loadDraft();
+          document.getElementById('write-title').textContent = '새로운 기록';
+          document.getElementById('btn-submit').innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> 발행하기';
+        }
         lucide.createIcons();
       }
     };
@@ -538,9 +544,21 @@
                 ${cats.map(c => `<span class="text-xs px-3 py-1 rounded-full font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800">${esc(c)}</span>`).join('')}
               </div>
               <h1 class="text-4xl md:text-5xl font-black leading-tight tracking-tight mb-5">${esc(data.title ?? '')}</h1>
-              <p class="text-xs text-zinc-400 dark:text-zinc-500" style="font-family:'JetBrains Mono',monospace;">
-                ${esc(data.date ?? '')} &nbsp;·&nbsp; ${rt}분 읽기
-              </p>
+              <div class="flex items-center justify-between mt-5">
+                <p class="text-xs text-zinc-400 dark:text-zinc-500" style="font-family:'JetBrains Mono',monospace;">
+                  ${esc(data.date ?? '')} &nbsp;·&nbsp; ${rt}분 읽기
+                </p>
+                <div class="flex gap-2">
+                  <button onclick="actions.loadEdit('${esc(id)}')"
+                    class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:border-zinc-400 dark:hover:border-zinc-500 transition-all">
+                    <i data-lucide="pencil" class="w-3 h-3"></i> 수정
+                  </button>
+                  <button onclick="actions.delete('${esc(id)}')"
+                    class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-red-500 hover:border-red-300 dark:hover:border-red-500/50 transition-all">
+                    <i data-lucide="trash-2" class="w-3 h-3"></i> 삭제
+                  </button>
+                </div>
+              </div>
             </header>
             ${cover ? `<img src="${cover}" alt="커버 이미지" class="w-full aspect-video object-cover rounded-2xl mb-10 border border-zinc-200 dark:border-zinc-800">` : ''}
             <div class="md">${body}</div>
@@ -548,6 +566,71 @@
           lucide.createIcons();
         } catch (e) {
           el.innerHTML = `<div class="py-20 text-center text-sm text-zinc-400">글을 불러올 수 없어요.<br><span class="text-xs text-zinc-500 mt-1 block font-mono">${esc(e.message)}</span></div>`;
+        }
+      },
+
+      async loadEdit(id) {
+        showToast('글 불러오는 중...');
+        try {
+          const res  = await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/${CONFIG.postsPath}/${id}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const file = await res.json();
+          const data = JSON.parse(fromB64(file.content));
+
+          editMode = { id, sha: file.sha, originalDate: data.date ?? '', originalImage: data.image ?? null };
+
+          // 폼 채우기
+          document.getElementById('form-title').value    = data.title    ?? '';
+          document.getElementById('form-body').value     = data.content  ?? '';
+          document.getElementById('form-category').value = data.category ?? '';
+          document.getElementById('word-count').textContent = `${(data.content ?? '').length.toLocaleString()}자`;
+
+          // 뷰 전환
+          document.querySelectorAll('.view').forEach(el => { el.classList.add('hidden'); el.classList.remove('view-enter'); });
+          const target = document.getElementById('view-write');
+          target.classList.remove('hidden');
+          void target.offsetWidth;
+          target.classList.add('view-enter');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+
+          renderMoodButtons();
+          if (data.mood) selectMood(data.mood);
+          document.getElementById('write-title').textContent = '기록 수정하기';
+          document.getElementById('btn-submit').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> 수정 완료';
+          lucide.createIcons();
+          showToast('수정 모드로 전환됐어요.');
+        } catch (e) {
+          showToast(`불러오기 실패: ${e.message}`);
+        }
+      },
+
+      async delete(id) {
+        if (!confirm('정말 삭제할거야? 되돌릴 수 없어.')) return;
+        const token = prompt('GitHub Personal Access Token:');
+        if (!token?.trim()) return;
+
+        try {
+          // SHA 먼저 가져오기
+          const metaRes = await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/${CONFIG.postsPath}/${id}`);
+          if (!metaRes.ok) throw new Error(`HTTP ${metaRes.status}`);
+          const file = await metaRes.json();
+
+          const res = await fetch(
+            `https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/${CONFIG.postsPath}/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `token ${token.trim()}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: `delete: ${id}`, sha: file.sha, branch: CONFIG.branch }),
+            }
+          );
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message ?? `HTTP ${res.status}`);
+          }
+          showToast('삭제 완료.');
+          setTimeout(() => router.go('list'), 1000);
+        } catch (e) {
+          showToast(`삭제 실패: ${e.message}`);
         }
       },
 
@@ -573,25 +656,33 @@
         btn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> 업로드 중...`;
 
         try {
-          const image    = imgFile ? await fileToBase64(imgFile) : null;
-          const fileName = `post-${Date.now()}.json`;
+          const isEdit   = editMode !== null;
+          const newImage = imgFile ? await fileToBase64(imgFile) : null;
+          const fileName = isEdit ? editMode.id : `post-${Date.now()}.json`;
           const payload  = {
             title, category: cat, content,
             mood: activeMood,
-            image,
-            date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }),
+            // 수정 시: 새 이미지 없으면 기존 이미지 유지
+            image: newImage ?? (isEdit ? editMode.originalImage : null),
+            // 수정 시: 원래 날짜 유지 + 수정일 표기
+            date: isEdit
+              ? `${editMode.originalDate} (수정됨)`
+              : new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }),
           };
+
+          const body = {
+            message: isEdit ? `edit: ${title}` : `post: ${title}`,
+            content: toB64(JSON.stringify(payload, null, 2)),
+            branch:  CONFIG.branch,
+          };
+          if (isEdit) body.sha = editMode.sha;
 
           const res = await fetch(
             `https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/${CONFIG.postsPath}/${fileName}`,
             {
               method: 'PUT',
               headers: { Authorization: `token ${token.trim()}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                message: `post: ${title}`,
-                content: toB64(JSON.stringify(payload, null, 2)),
-                branch:  CONFIG.branch,
-              }),
+              body: JSON.stringify(body),
             }
           );
 
@@ -601,10 +692,11 @@
           }
 
           clearDraft();
-          showToast('발행 완료! 🎉');
+          showToast(isEdit ? '수정 완료! ✅' : '발행 완료! 🎉');
           ['form-title', 'form-body', 'form-category'].forEach(id => { document.getElementById(id).value = ''; });
           document.getElementById('form-image').value = '';
           activeMood = null;
+          editMode   = null;
           setTimeout(() => router.go('list'), 1200);
         } catch (e) {
           console.error(e);
