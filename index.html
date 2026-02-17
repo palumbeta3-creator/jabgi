@@ -113,6 +113,9 @@
     <nav class="max-w-2xl mx-auto bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl rounded-2xl border border-zinc-200 dark:border-zinc-800 px-5 h-12 flex items-center justify-between shadow-sm">
       <button onclick="router.go('list')" class="text-sm font-black tracking-tight text-orange-500 hover:text-orange-400 transition-colors" style="font-family:'JetBrains Mono',monospace;">VIBE.LOG</button>
       <div class="flex gap-1 items-center">
+        <button onclick="clearToken()" id="btn-clear-token" aria-label="토큰 초기화" title="저장된 토큰 초기화" class="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-300 dark:text-zinc-700 hover:text-zinc-500 dark:hover:text-zinc-400 hidden">
+          <i data-lucide="key-round" class="w-4 h-4"></i>
+        </button>
         <button onclick="toggleDark()" aria-label="다크모드 전환" class="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
           <i data-lucide="sun"  class="w-4 h-4 hidden dark:block"></i>
           <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
@@ -204,7 +207,13 @@
           </button>
           <span class="text-[10px] text-zinc-400 dark:text-zinc-600 whitespace-nowrap shrink-0" style="font-family:'JetBrains Mono',monospace;">⌘+↵</span>
         </div>
-        <p class="text-[11px] text-zinc-400 dark:text-zinc-600 text-center -mt-2">발행 시 GitHub Personal Access Token 입력 필요. 임시저장 자동.</p>
+        <div class="flex items-center justify-center gap-2 -mt-2">
+          <label class="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" id="chk-remember-token" class="w-3.5 h-3.5 accent-orange-500 cursor-pointer">
+            <span class="text-[11px] text-zinc-400 dark:text-zinc-600">이 기기에서 토큰 기억하기</span>
+          </label>
+        </div>
+        <p id="token-status" class="text-[11px] text-center -mt-3"></p>
       </div>
     </section>
 
@@ -268,6 +277,50 @@
 
     // HTML 새니타이즈
     const sanitize = html => typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
+
+    /* ═══════════════════════════════════════════════════════
+       TOKEN MANAGER
+    ═══════════════════════════════════════════════════════ */
+    function getToken() {
+      // 1순위: 세션(탭 닫으면 삭제), 2순위: 로컬(기기에 영구 저장)
+      const cached = sessionStorage.getItem('vibe-token') || localStorage.getItem('vibe-token');
+      if (cached) return cached;
+
+      const token = prompt('GitHub Personal Access Token:');
+      if (!token?.trim()) return null;
+
+      // 체크박스 켜져 있으면 localStorage, 아니면 sessionStorage
+      const remember = document.getElementById('chk-remember-token')?.checked;
+      if (remember) {
+        localStorage.setItem('vibe-token', token.trim());
+      } else {
+        sessionStorage.setItem('vibe-token', token.trim());
+      }
+      updateTokenUI();
+      return token.trim();
+    }
+
+    function clearToken() {
+      sessionStorage.removeItem('vibe-token');
+      localStorage.removeItem('vibe-token');
+      updateTokenUI();
+      showToast('토큰이 초기화됐어요.');
+    }
+
+    function updateTokenUI() {
+      const has   = !!(sessionStorage.getItem('vibe-token') || localStorage.getItem('vibe-token'));
+      const isPerm = !!localStorage.getItem('vibe-token');
+      const btn   = document.getElementById('btn-clear-token');
+      const status = document.getElementById('token-status');
+      if (btn) btn.classList.toggle('hidden', !has);
+      if (status) {
+        status.textContent = has
+          ? (isPerm ? '🔑 토큰 저장됨 (기기에 영구 보관) — 키 아이콘으로 초기화 가능' : '🔑 토큰 저장됨 (탭 닫으면 삭제)')
+          : '';
+        status.className = `text-[11px] text-center -mt-3 ${has ? 'text-orange-400' : ''}`;
+      }
+      lucide.createIcons();
+    }
 
     /* ═══════════════════════════════════════════════════════
        DARK MODE — localStorage 저장
@@ -606,8 +659,8 @@
 
       async delete(id) {
         if (!confirm('정말 삭제할거야? 되돌릴 수 없어.')) return;
-        const token = prompt('GitHub Personal Access Token:');
-        if (!token?.trim()) return;
+        const token = getToken();
+        if (!token) return;
 
         try {
           // SHA 먼저 가져오기
@@ -649,8 +702,8 @@
           return;
         }
 
-        const token = prompt('GitHub Personal Access Token:');
-        if (!token?.trim()) return;
+        const token = getToken();
+        if (!token) return;
 
         btn.disabled = true;
         btn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> 업로드 중...`;
@@ -726,6 +779,7 @@
 
     window.addEventListener('load', () => {
       router.go('list');
+      updateTokenUI();
 
       // 실시간 검색
       document.getElementById('search-input').addEventListener('input', applyFilters);
