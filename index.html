@@ -2,68 +2,100 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>익명 로그</title>
+    <title>익명 Vibe 블로그</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&display=swap');
-        body { font-family: 'Pretendard', sans-serif; background-color: #0f172a; color: #e2e8f0; }
-        .post-card { transition: transform 0.2s; border: 1px solid #1e293b; }
-        .post-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
+        body { background: #0f172a; color: #f8fafc; font-family: sans-serif; }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="max-w-2xl mx-auto px-6 py-12">
+<body class="max-w-2xl mx-auto p-6">
 
-    <header class="mb-12 border-b border-slate-800 pb-8">
-        <h1 class="text-2xl font-bold text-white mb-2">Thoughts & Stocks</h1>
-        <p class="text-slate-400 text-sm italic">"적당히 쓰다 언제든 사라질 공간"</p>
-    </header>
+    <nav class="flex gap-4 mb-10 text-sm font-bold">
+        <button onclick="showPage('list')" class="hover:text-blue-400">HOME</button>
+        <button onclick="showPage('write')" class="hover:text-blue-400">WRITE</button>
+    </nav>
 
-    <main id="app" class="space-y-6">
-        </main>
+    <section id="page-list">
+        <h1 class="text-2xl mb-6 font-black text-blue-500 underline decoration-double">LATEST LOGS</h1>
+        <div id="post-container" class="space-y-4">로드 중...</div>
+    </section>
 
-    <footer class="mt-20 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
-        © <span id="year"></span> Anonymous Blog. Built with Vibe Coding.
-    </footer>
+    <section id="page-write" class="hidden">
+        <h1 class="text-2xl mb-6 font-black text-green-500">NEW POST</h1>
+        <div class="space-y-4">
+            <input id="post-title" type="text" placeholder="제목" class="w-full p-2 bg-slate-800 border border-slate-700 rounded">
+            <textarea id="post-content" rows="10" placeholder="내용 (Markdown 가능)" class="w-full p-2 bg-slate-800 border border-slate-700 rounded"></textarea>
+            <input id="gh-token" type="password" placeholder="GitHub Token 입력" class="w-full p-2 bg-slate-900 border border-red-900/50 rounded text-xs">
+            <button onclick="submitPost()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded">발행하기 (GitHub Push)</button>
+        </div>
+    </section>
 
     <script>
-        // --- [여기서부터 글 관리] ---
-        // 새로운 글을 쓸 때는 아래 배열에 객체 하나만 추가하면 끝!
-        const posts = [
-            {
-                title: "오늘의 주식 바이브",
-                date: "2026.02.17",
-                category: "주식",
-                content: "삼성전자 흐름이 묘하다. 일단 홀딩. 익절은 언제나 옳다."
-            },
-            {
-                title: "블로그 개설했다",
-                date: "2026.02.16",
-                category: "잡담",
-                content: "깃허브로 만드니까 편하네. 누가 보면 바로 폭파한다."
-            }
-        ];
-        // --- [글 관리 끝] ---
+        const CONFIG = {
+            user: '본인_계정명',
+            repo: '레포_이름',
+            branch: 'main'
+        };
 
-        const app = document.getElementById('app');
-        document.getElementById('year').textContent = new Date().getFullYear();
-
-        function render() {
-            app.innerHTML = posts.map(post => `
-                <article class="post-card p-6 rounded-lg bg-slate-800/50">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-bold uppercase tracking-wider">
-                            ${post.category}
-                        </span>
-                        <span class="text-xs text-slate-500">${post.date}</span>
-                    </div>
-                    <h2 class="text-xl font-bold text-slate-100 mb-3">${post.title}</h2>
-                    <p class="text-slate-400 leading-relaxed text-sm whitespace-pre-line">${post.content}</p>
-                </article>
-            `).join('');
+        // 페이지 전환 함수
+        function showPage(pageId) {
+            document.getElementById('page-list').classList.toggle('hidden', pageId !== 'list');
+            document.getElementById('page-write').classList.toggle('hidden', pageId !== 'write');
+            if (pageId === 'list') loadPosts();
         }
 
-        render();
+        // DB(GitHub)에서 글 목록 가져오기
+        async function loadPosts() {
+            const container = document.getElementById('post-container');
+            try {
+                const res = await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/posts`);
+                const files = await res.json();
+                
+                if (!Array.isArray(files)) { container.innerHTML = "글이 없습니다."; return; }
+
+                const postData = await Promise.all(files.reverse().map(f => fetch(f.download_url).then(r => r.json())));
+                container.innerHTML = postData.map(p => `
+                    <div class="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
+                        <h2 class="text-lg font-bold">${p.title}</h2>
+                        <p class="text-sm text-slate-400 mt-2 whitespace-pre-wrap">${p.content}</p>
+                        <div class="text-[10px] text-slate-600 mt-3">${p.date}</div>
+                    </div>
+                `).join('');
+            } catch (e) { container.innerHTML = "설정을 확인하세요."; }
+        }
+
+        // 글쓰기 기능 (GitHub API 사용)
+        async function submitPost() {
+            const title = document.getElementById('post-title').value;
+            const content = document.getElementById('post-content').value;
+            const token = document.getElementById('gh-token').value;
+            const date = new Date().toLocaleString();
+            const fileName = `post-${Date.now()}.json`;
+
+            const payload = {
+                title, content, date
+            };
+
+            const res = await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/posts/${fileName}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: `Add post: ${title}`,
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(payload)))), // Base64 인코딩
+                    branch: CONFIG.branch
+                })
+            });
+
+            if (res.ok) {
+                alert("발행 성공!");
+                showPage('list');
+            } else {
+                alert("실패! 토큰이나 권한 확인해라.");
+            }
+        }
+
+        loadPosts();
     </script>
 </body>
 </html>
