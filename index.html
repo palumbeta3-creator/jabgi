@@ -9,6 +9,12 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <!-- Quill rich text editor -->
+  <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.7/quill.snow.css">
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+  <!-- Cropper.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -24,7 +30,6 @@
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 2px; }
-    textarea::-webkit-scrollbar-thumb { background: #52525b; }
 
     /* ── Page transition ── */
     @keyframes fadeUp {
@@ -41,13 +46,12 @@
     .skeleton { animation: skeletonPulse 1.6s ease-in-out infinite; }
 
     /* ── Category filter: hide scrollbar ── */
-    #category-filter {
-      overflow-x: auto; scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
+    #category-filter { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     #category-filter::-webkit-scrollbar { display: none; }
 
-    /* ── Markdown content ── */
+    /* ════════════════════════════════════════
+       Markdown legacy (기존 마크다운 글 렌더링)
+    ════════════════════════════════════════ */
     .md h1 { font-size: 1.75rem;  font-weight: 900; line-height: 1.2; margin: 2.25rem 0 1rem; }
     .md h2 { font-size: 1.375rem; font-weight: 800; line-height: 1.3; margin: 2rem 0 0.75rem; }
     .md h3 { font-size: 1.125rem; font-weight: 700; line-height: 1.4; margin: 1.5rem 0 0.5rem; }
@@ -55,20 +59,10 @@
     .md a   { color: var(--accent, #f97316); text-decoration: underline; text-underline-offset: 3px; }
     .md strong { color: #f4f4f5; font-weight: 700; }
     .md em     { color: #d4d4d8; font-style: italic; }
-    .md code {
-      background: #27272a; color: #fb923c;
-      padding: 0.1em 0.4em; border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace; font-size: 0.84em;
-    }
-    .md pre {
-      background: #18181b; border: 1px solid #27272a;
-      padding: 1.25rem; border-radius: 0.75rem; overflow-x: auto; margin: 1.5rem 0;
-    }
+    .md code { background: #27272a; color: #fb923c; padding: 0.1em 0.4em; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.84em; }
+    .md pre  { background: #18181b; border: 1px solid #27272a; padding: 1.25rem; border-radius: 0.75rem; overflow-x: auto; margin: 1.5rem 0; }
     .md pre code { background: none; color: #a1a1aa; padding: 0; font-size: 0.875rem; }
-    .md blockquote {
-      border-left: 2px solid var(--accent, #f97316);
-      padding: 0.1rem 0 0.1rem 1.25rem; margin: 1.5rem 0;
-    }
+    .md blockquote { border-left: 2px solid var(--accent, #f97316); padding: 0.1rem 0 0.1rem 1.25rem; margin: 1.5rem 0; }
     .md blockquote p { color: #71717a !important; font-style: italic; }
     .md img { border-radius: 0.75rem; margin: 1.75rem auto; max-width: 100%; display: block; border: 1px solid #27272a; }
     .md ul  { padding-left: 1.5rem; margin: 0.875rem 0; list-style: disc; }
@@ -78,34 +72,148 @@
     .md table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.9rem; }
     .md th { border-bottom: 1px solid #3f3f46; padding: 0.5rem 0.75rem; text-align: left; font-weight: 700; color: #f4f4f5; }
     .md td { border-bottom: 1px solid #27272a; padding: 0.5rem 0.75rem; color: #a1a1aa; }
-
-    /* light mode md overrides */
     :not(.dark) .md p       { color: #52525b; }
     :not(.dark) .md strong  { color: #18181b; }
     :not(.dark) .md em      { color: #3f3f46; }
     :not(.dark) .md li      { color: #52525b; }
     :not(.dark) .md code    { background: #f4f4f5; color: #ea580c; }
     :not(.dark) .md pre     { background: #fafafa; border-color: #e4e4e7; }
-    :not(.dark) .md pre code{ color: #3f3f46; }
+    :not(.dark) .md pre code { color: #3f3f46; }
     :not(.dark) .md blockquote p { color: #71717a !important; }
     :not(.dark) .md th      { border-color: #d4d4d8; color: #18181b; }
     :not(.dark) .md td      { border-color: #e4e4e7; color: #52525b; }
     :not(.dark) .md hr      { border-color: #e4e4e7; }
     :not(.dark) .md img     { border-color: #e4e4e7; }
 
-    /* editor font */
-    #form-body { font-family: 'JetBrains Mono', monospace; }
+    /* ════════════════════════════════════════
+       Quill — 리치 텍스트 렌더링 (새 글 형식)
+    ════════════════════════════════════════ */
+    .rh { font-family: 'Pretendard Variable', Pretendard, sans-serif; }
+    .rh p   { margin: 0.9rem 0; line-height: 1.9; color: #a1a1aa; font-size: 1.05rem; }
+    .rh h1  { font-size: 1.75rem; font-weight: 900; line-height: 1.2; margin: 2.25rem 0 1rem; color: #f4f4f5; }
+    .rh h2  { font-size: 1.375rem; font-weight: 800; line-height: 1.3; margin: 2rem 0 0.75rem; color: #f4f4f5; }
+    .rh h3  { font-size: 1.125rem; font-weight: 700; line-height: 1.4; margin: 1.5rem 0 0.5rem; color: #f4f4f5; }
+    .rh a   { color: var(--accent, #f97316); text-decoration: underline; text-underline-offset: 3px; }
+    .rh strong { color: #f4f4f5; font-weight: 700; }
+    .rh em     { font-style: italic; }
+    .rh s      { text-decoration: line-through; color: #71717a; }
+    .rh u      { text-underline-offset: 3px; }
+    .rh blockquote { border-left: 2px solid var(--accent, #f97316); padding: 0.25rem 0 0.25rem 1.25rem; margin: 1.5rem 0; color: #71717a; font-style: italic; }
+    .rh pre  { background: #18181b; border: 1px solid #27272a; padding: 1.25rem; border-radius: 0.75rem; overflow-x: auto; margin: 1.5rem 0; }
+    .rh pre.ql-syntax { color: #a1a1aa; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; }
+    .rh img  { border-radius: 0.75rem; margin: 1.75rem auto; max-width: 100%; display: block; border: 1px solid #27272a; }
+    .rh ol   { padding-left: 1.5rem; margin: 0.875rem 0; list-style: decimal; }
+    .rh ul   { padding-left: 1.5rem; margin: 0.875rem 0; list-style: disc; }
+    .rh li   { margin: 0.35rem 0; line-height: 1.75; color: #a1a1aa; }
+    .rh .ql-align-center   { text-align: center; }
+    .rh .ql-align-right    { text-align: right; }
+    .rh .ql-align-justify  { text-align: justify; }
+    .rh .ql-size-small     { font-size: 0.8em; }
+    .rh .ql-size-large     { font-size: 1.35em; }
+    .rh .ql-size-huge      { font-size: 1.85em; font-weight: 900; }
+    .rh hr { border: none; border-top: 1px solid #27272a; margin: 2rem 0; }
+    :not(.dark) .rh p      { color: #52525b; }
+    :not(.dark) .rh h1, :not(.dark) .rh h2, :not(.dark) .rh h3 { color: #18181b; }
+    :not(.dark) .rh strong { color: #18181b; }
+    :not(.dark) .rh li     { color: #52525b; }
+    :not(.dark) .rh img    { border-color: #e4e4e7; }
+    :not(.dark) .rh pre    { background: #fafafa; border-color: #e4e4e7; }
+    :not(.dark) .rh pre.ql-syntax { color: #3f3f46; }
+    :not(.dark) .rh hr     { border-color: #e4e4e7; }
+
+    /* ════════════════════════════════════════
+       Quill 에디터 UI — 다크모드
+    ════════════════════════════════════════ */
+    .ql-toolbar.ql-snow  { border: none; border-bottom: 1px solid #e4e4e7; border-radius: 0.75rem 0.75rem 0 0; background: #fafafa; padding: 8px 12px; flex-wrap: wrap; }
+    .ql-container.ql-snow { border: none; border-radius: 0 0 0.75rem 0.75rem; font-family: 'Pretendard Variable', Pretendard, sans-serif; }
+    .ql-editor { min-height: 340px; font-size: 1rem; line-height: 1.8; padding: 16px 20px; }
+    .ql-editor.ql-blank::before { font-style: normal; color: #a1a1aa; }
+    .ql-snow .ql-picker.ql-header .ql-picker-label::before,
+    .ql-snow .ql-picker.ql-header .ql-picker-item::before { font-family: 'Pretendard Variable', Pretendard, sans-serif; }
+
+    .dark .ql-toolbar.ql-snow  { background: #18181b; border-bottom-color: #3f3f46; }
+    .dark .ql-container.ql-snow { background: #18181b; }
+    .dark .ql-editor { color: #e4e4e7; }
+    .dark .ql-editor.ql-blank::before { color: #52525b; }
+    .dark .ql-snow .ql-stroke  { stroke: #a1a1aa; }
+    .dark .ql-snow .ql-fill    { fill: #a1a1aa; }
+    .dark .ql-snow .ql-picker   { color: #a1a1aa; }
+    .dark .ql-snow .ql-picker-options { background: #27272a; border-color: #3f3f46; }
+    .dark .ql-snow .ql-picker-item:hover { color: #f97316; }
+    .dark .ql-toolbar button:hover .ql-stroke { stroke: #f97316; }
+    .dark .ql-toolbar button:hover .ql-fill   { fill:   #f97316; }
+    .dark .ql-toolbar button.ql-active .ql-stroke { stroke: #f97316; }
+    .dark .ql-toolbar button.ql-active .ql-fill   { fill:   #f97316; }
+    .dark .ql-snow .ql-picker-label:hover  { color: #f97316; }
+    .dark .ql-snow .ql-picker-label.ql-active { color: #f97316; }
+    .dark .ql-snow .ql-tooltip { background: #27272a; border-color: #3f3f46; color: #e4e4e7; box-shadow: none; }
+    .dark .ql-snow .ql-tooltip input { background: #18181b; border-color: #3f3f46; color: #e4e4e7; }
+    .dark .ql-snow .ql-tooltip a.ql-action::after { border-right-color: #3f3f46; }
+
+    /* ── Crop modal ── */
+    .crop-aspect-btn { transition: all .15s; }
+    .crop-aspect-btn.active { background: #f97316; color: #fff; border-color: #f97316; }
   </style>
 </head>
 <body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen transition-colors duration-200 selection:bg-orange-500/25">
 
-  <!-- 스크롤 진행 바 (글 상세 뷰에서만 표시) -->
+  <!-- 스크롤 진행 바 -->
   <div id="progress-bar" class="fixed top-0 left-0 h-[2px] z-[70] transition-[width] duration-100 ease-out pointer-events-none" style="width:0;background:var(--accent-color,#f97316);"></div>
 
   <!-- 토스트 알림 -->
   <div id="toast" role="alert" aria-live="polite"
     class="fixed bottom-6 left-1/2 z-50 px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl text-white pointer-events-none whitespace-nowrap opacity-0 transition-all duration-300"
-    style="transform:translate(-50%,10px);background:#18181b;border:1px solid #3f3f46;">
+    style="transform:translate(-50%,10px);background:#18181b;border:1px solid #3f3f46;"></div>
+
+  <!-- 이미지 크롭 모달 -->
+  <div id="img-modal" class="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-xl shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-800">
+        <h3 class="font-black text-base">이미지 편집</h3>
+        <button onclick="closeImgModal()" class="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <!-- Cropper 영역 -->
+      <div class="bg-zinc-950 max-h-64 flex items-center justify-center overflow-hidden">
+        <img id="crop-preview" class="max-w-full max-h-64 block" alt="crop">
+      </div>
+      <!-- 컨트롤 -->
+      <div class="p-5 space-y-4">
+        <!-- 비율 -->
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">비율</p>
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="setCropAspect(null)"  class="crop-aspect-btn active text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400" data-ratio="free">자유</button>
+            <button onclick="setCropAspect(16/9)"  class="crop-aspect-btn text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400" data-ratio="16:9">16:9</button>
+            <button onclick="setCropAspect(4/3)"   class="crop-aspect-btn text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400" data-ratio="4:3">4:3</button>
+            <button onclick="setCropAspect(1)"     class="crop-aspect-btn text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400" data-ratio="1:1">1:1</button>
+            <button onclick="setCropAspect(3/4)"   class="crop-aspect-btn text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400" data-ratio="3:4">3:4 (세로)</button>
+          </div>
+        </div>
+        <!-- 출력 크기 -->
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">출력 크기</p>
+          <div class="flex gap-2">
+            <button onclick="setCropSize('small')"  class="size-btn text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400 hover:border-orange-400 transition-all">소 (320px)</button>
+            <button onclick="setCropSize('medium')" class="size-btn text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400 hover:border-orange-400 transition-all">중 (640px)</button>
+            <button onclick="setCropSize('full')"   class="size-btn active text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400 hover:border-orange-400 transition-all">원본</button>
+          </div>
+        </div>
+        <!-- 회전 -->
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">회전</p>
+          <div class="flex gap-2">
+            <button onclick="cropperInst?.rotate(-90)" class="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400 hover:border-orange-400 transition-all">↺ 90°</button>
+            <button onclick="cropperInst?.rotate(90)"  class="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400 hover:border-orange-400 transition-all">↻ 90°</button>
+            <button onclick="cropperInst?.reset()"     class="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 font-bold text-zinc-600 dark:text-zinc-400 hover:border-orange-400 transition-all">초기화</button>
+          </div>
+        </div>
+        <!-- 액션 -->
+        <div class="flex gap-3 pt-1">
+          <button onclick="confirmCrop()" class="flex-1 bg-orange-500 hover:bg-orange-400 py-2.5 rounded-xl font-black text-sm text-white transition-all active:scale-[0.98]">삽입하기</button>
+          <button onclick="closeImgModal()" class="px-5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all">취소</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 내비게이션 -->
@@ -129,7 +237,7 @@
 
   <main class="max-w-2xl mx-auto px-4 py-8">
 
-    <!-- ── 목록 뷰 ────────────────────────────────────────── -->
+    <!-- ── 목록 뷰 ── -->
     <section id="view-list" class="view">
       <div class="space-y-5 mb-8">
         <div>
@@ -146,7 +254,7 @@
       <div id="post-list" class="space-y-3"></div>
     </section>
 
-    <!-- ── 상세 뷰 ────────────────────────────────────────── -->
+    <!-- ── 상세 뷰 ── -->
     <section id="view-detail" class="view hidden">
       <button onclick="router.go('list')" class="group mb-10 flex items-center gap-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-sm font-bold">
         <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform"></i> 목록으로
@@ -154,7 +262,7 @@
       <article id="post-content"></article>
     </section>
 
-    <!-- ── 쓰기 뷰 ────────────────────────────────────────── -->
+    <!-- ── 쓰기 뷰 ── -->
     <section id="view-write" class="view hidden">
       <div class="flex items-center justify-between mb-6">
         <h2 id="write-title" class="text-xl font-black">새로운 기록</h2>
@@ -163,57 +271,59 @@
         </button>
       </div>
 
-      <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-5">
-
-        <!-- 무드 선택 -->
-        <div>
-          <p class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-3">오늘의 바이브</p>
-          <div class="flex gap-2 flex-wrap" id="mood-buttons"></div>
-        </div>
-
-        <!-- 제목 -->
-        <input id="form-title" type="text" placeholder="오늘 있었던 일..."
-          class="w-full bg-transparent text-xl font-black focus:outline-none border-b border-zinc-200 dark:border-zinc-800 focus:border-orange-400/60 dark:focus:border-orange-500/40 pb-3 transition-colors placeholder:text-zinc-300 dark:placeholder:text-zinc-700">
-
-        <!-- 메타 -->
-        <div class="grid grid-cols-2 gap-3">
+      <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        <!-- 상단 메타 영역 -->
+        <div class="p-6 space-y-5 border-b border-zinc-100 dark:border-zinc-800">
+          <!-- 무드 선택 -->
           <div>
-            <label class="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1.5" for="form-category">카테고리</label>
-            <input id="form-category" type="text" placeholder="일상, 코딩, 잡담..."
-              class="w-full bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400/60 dark:focus:border-orange-500/40 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600">
+            <p class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-3">오늘의 바이브</p>
+            <div class="flex gap-2 flex-wrap" id="mood-buttons"></div>
           </div>
-          <div>
-            <label class="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1.5" for="form-image">이미지 <span class="normal-case font-medium text-zinc-500">(500KB 이하)</span></label>
-            <input type="file" id="form-image" accept="image/*"
-              class="w-full bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2 text-xs text-zinc-500 dark:text-zinc-400 cursor-pointer focus:outline-none file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-orange-500/10 file:text-orange-500 hover:file:bg-orange-500/20 transition-all">
+          <!-- 제목 -->
+          <input id="form-title" type="text" placeholder="오늘 있었던 일..."
+            class="w-full bg-transparent text-xl font-black focus:outline-none border-b border-zinc-200 dark:border-zinc-800 focus:border-orange-400/60 dark:focus:border-orange-500/40 pb-3 transition-colors placeholder:text-zinc-300 dark:placeholder:text-zinc-700">
+          <!-- 메타 -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1.5" for="form-category">카테고리</label>
+              <input id="form-category" type="text" placeholder="일상, 코딩, 잡담..."
+                class="w-full bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400/60 dark:focus:border-orange-500/40 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600">
+            </div>
+            <!-- 커버 이미지 -->
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1.5">커버 이미지 <span class="normal-case font-medium text-zinc-500">(클릭 후 크롭)</span></label>
+              <input type="file" id="form-image" accept="image/*" onchange="onCoverImageChange(event)"
+                class="w-full bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2 text-xs text-zinc-500 dark:text-zinc-400 cursor-pointer focus:outline-none file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-orange-500/10 file:text-orange-500 hover:file:bg-orange-500/20 transition-all">
+              <!-- 커버 미리보기 -->
+              <div id="cover-preview" class="hidden mt-2 relative">
+                <img id="cover-img" class="w-full h-24 object-cover rounded-lg border border-zinc-200 dark:border-zinc-700" alt="cover">
+                <button onclick="clearCoverImage()" class="absolute top-1.5 right-1.5 bg-zinc-900/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-500 transition-colors">×</button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- 에디터 -->
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label class="text-[10px] font-black uppercase tracking-widest text-zinc-400" for="form-body">내용 <span class="normal-case font-medium text-zinc-500">(마크다운 지원)</span></label>
-            <span id="word-count" class="text-[11px] text-zinc-500 dark:text-zinc-600" style="font-family:'JetBrains Mono',monospace;">0자</span>
-          </div>
-          <textarea id="form-body" rows="15"
-            placeholder="자유롭게 써봐.&#10;&#10;**굵게**, *기울임*, `코드`, > 인용구&#10;## 소제목, - 리스트, ---구분선 다 됨."
-            class="w-full bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 text-sm focus:outline-none focus:border-orange-400/60 dark:focus:border-orange-500/40 transition-all resize-none leading-relaxed text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-300 dark:placeholder:text-zinc-700"></textarea>
-        </div>
+        <!-- Quill 에디터 -->
+        <div id="quill-editor" class="bg-white dark:bg-zinc-900"></div>
 
-        <div class="flex items-center gap-3 pt-1">
+        <!-- 하단 액션 영역 -->
+        <div class="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 space-y-4">
+          <div class="flex items-center justify-between">
+            <span id="word-count" class="text-[11px] text-zinc-400 dark:text-zinc-600" style="font-family:'JetBrains Mono',monospace;">0자</span>
+            <span class="text-[10px] text-zinc-400 dark:text-zinc-600" style="font-family:'JetBrains Mono',monospace;">⌘+↵ 발행</span>
+          </div>
           <button onclick="actions.submit()" id="btn-submit"
-            class="flex-1 bg-orange-500 hover:bg-orange-400 py-3 rounded-xl font-black text-sm text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            class="w-full bg-orange-500 hover:bg-orange-400 py-3 rounded-xl font-black text-sm text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
             <i data-lucide="send" class="w-4 h-4"></i> 발행하기
           </button>
-          <span class="text-[10px] text-zinc-400 dark:text-zinc-600 whitespace-nowrap shrink-0" style="font-family:'JetBrains Mono',monospace;">⌘+↵</span>
+          <div class="flex items-center justify-center gap-2">
+            <label class="flex items-center gap-1.5 cursor-pointer select-none">
+              <input type="checkbox" id="chk-remember-token" class="w-3.5 h-3.5 accent-orange-500 cursor-pointer">
+              <span class="text-[11px] text-zinc-400 dark:text-zinc-600">이 기기에서 토큰 기억하기</span>
+            </label>
+          </div>
+          <p id="token-status" class="text-[11px] text-center -mt-3"></p>
         </div>
-        <div class="flex items-center justify-center gap-2 -mt-2">
-          <label class="flex items-center gap-1.5 cursor-pointer select-none">
-            <input type="checkbox" id="chk-remember-token" class="w-3.5 h-3.5 accent-orange-500 cursor-pointer">
-            <span class="text-[11px] text-zinc-400 dark:text-zinc-600">이 기기에서 토큰 기억하기</span>
-          </label>
-        </div>
-        <p id="token-status" class="text-[11px] text-center -mt-3"></p>
       </div>
     </section>
 
@@ -227,13 +337,13 @@
 
   <script>
     /* ═══════════════════════════════════════════════════════
-       CONFIG — 이 두 줄만 채우면 됩니다
+       CONFIG
     ═══════════════════════════════════════════════════════ */
     const CONFIG = {
       user:      'palumbeta3-creator',
       repo:      'jabgi',
       branch:    'main',
-      postsPath: 'posts',         // 레포에 이 폴더 미리 생성
+      postsPath: 'posts',
     };
 
     /* ═══════════════════════════════════════════════════════
@@ -254,48 +364,36 @@
     let allPosts       = [];
     let activeMood     = null;
     let activeCategory = null;
-    let editMode       = null; // null | { id: string, sha: string, originalDate: string, originalImage: string }
+    let editMode       = null;
+    let quill          = null;
+    let coverImageData = null;
+    let cropperInst    = null;
+    let cropCallback   = null;
+    let cropSize       = 'full';
 
     /* ═══════════════════════════════════════════════════════
        UTILS
     ═══════════════════════════════════════════════════════ */
-    // XSS-safe HTML escape
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-    // 읽기 시간 추정 (분)
     const readingTime = text => Math.max(1, Math.round(((text ?? '').match(/[\w가-힣]+/g) ?? []).length / 220));
-
-    // 안전한 이미지 src (data URI 또는 http/https만 허용)
     const safeImg = src => (src?.startsWith('data:image/') || /^https?:\/\//.test(src ?? '')) ? src : null;
-
-    // 파일 → base64
     const fileToBase64 = f => new Promise((res, rej) => { const r = new FileReader(); r.readAsDataURL(f); r.onload = () => res(r.result); r.onerror = rej; });
-
-    // UTF-8 안전 base64 인코딩 (deprecated escape 없이)
     const toB64   = str => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/gi, (_, p) => String.fromCharCode(parseInt(p, 16))));
     const fromB64 = b64 => decodeURIComponent([...atob(b64.replace(/\n/g, ''))].map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
-
-    // HTML 새니타이즈
-    const sanitize = html => typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
+    const sanitize = html => typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html, { ADD_ATTR: ['style', 'class'] }) : html;
+    const stripHtml = html => (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
     /* ═══════════════════════════════════════════════════════
        TOKEN MANAGER
     ═══════════════════════════════════════════════════════ */
     function getToken() {
-      // 1순위: 세션(탭 닫으면 삭제), 2순위: 로컬(기기에 영구 저장)
       const cached = sessionStorage.getItem('vibe-token') || localStorage.getItem('vibe-token');
       if (cached) return cached;
-
       const token = prompt('GitHub Personal Access Token:');
       if (!token?.trim()) return null;
-
-      // 체크박스 켜져 있으면 localStorage, 아니면 sessionStorage
       const remember = document.getElementById('chk-remember-token')?.checked;
-      if (remember) {
-        localStorage.setItem('vibe-token', token.trim());
-      } else {
-        sessionStorage.setItem('vibe-token', token.trim());
-      }
+      if (remember) localStorage.setItem('vibe-token', token.trim());
+      else          sessionStorage.setItem('vibe-token', token.trim());
       updateTokenUI();
       return token.trim();
     }
@@ -308,14 +406,14 @@
     }
 
     function updateTokenUI() {
-      const has   = !!(sessionStorage.getItem('vibe-token') || localStorage.getItem('vibe-token'));
+      const has    = !!(sessionStorage.getItem('vibe-token') || localStorage.getItem('vibe-token'));
       const isPerm = !!localStorage.getItem('vibe-token');
-      const btn   = document.getElementById('btn-clear-token');
+      const btn    = document.getElementById('btn-clear-token');
       const status = document.getElementById('token-status');
       if (btn) btn.classList.toggle('hidden', !has);
       if (status) {
         status.textContent = has
-          ? (isPerm ? '🔑 토큰 저장됨 (기기에 영구 보관) — 키 아이콘으로 초기화 가능' : '🔑 토큰 저장됨 (탭 닫으면 삭제)')
+          ? (isPerm ? '🔑 토큰 저장됨 (기기에 영구 보관) — 키 아이콘으로 초기화' : '🔑 토큰 저장됨 (탭 닫으면 자동 삭제)')
           : '';
         status.className = `text-[11px] text-center -mt-3 ${has ? 'text-orange-400' : ''}`;
       }
@@ -323,13 +421,9 @@
     }
 
     /* ═══════════════════════════════════════════════════════
-       DARK MODE — localStorage 저장
+       DARK MODE
     ═══════════════════════════════════════════════════════ */
-    (() => {
-      if (localStorage.getItem('vibe-dark') === 'false') {
-        document.documentElement.classList.remove('dark');
-      }
-    })();
+    (() => { if (localStorage.getItem('vibe-dark') === 'false') document.documentElement.classList.remove('dark'); })();
 
     function toggleDark() {
       const on = document.documentElement.classList.toggle('dark');
@@ -347,10 +441,136 @@
       el.textContent = msg;
       el.style.opacity = '1';
       el.style.transform = 'translate(-50%, 0)';
-      toastTimer = setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transform = 'translate(-50%, 10px)';
-      }, 2800);
+      toastTimer = setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%, 10px)'; }, 2800);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       IMAGE CROP MODAL
+    ═══════════════════════════════════════════════════════ */
+    function openImgModal(file, callback, defaultAspect) {
+      cropCallback = callback;
+      cropSize = 'full';
+      document.getElementById('img-modal').classList.remove('hidden');
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.toggle('active', b.textContent.includes('원본')));
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.getElementById('crop-preview');
+        img.src = e.target.result;
+        img.onload = () => {
+          if (cropperInst) { cropperInst.destroy(); cropperInst = null; }
+          cropperInst = new Cropper(img, {
+            viewMode: 1, dragMode: 'move', autoCropArea: 1,
+            aspectRatio: defaultAspect ?? NaN,
+            guides: true, center: true, highlight: false,
+          });
+          // 비율 버튼 초기 상태
+          document.querySelectorAll('.crop-aspect-btn').forEach(b => {
+            b.classList.remove('active');
+            if ((defaultAspect == null && b.dataset.ratio === 'free') ||
+                (defaultAspect === 16/9 && b.dataset.ratio === '16:9')) b.classList.add('active');
+          });
+        };
+      };
+      reader.readAsDataURL(file);
+      lucide.createIcons();
+    }
+
+    function closeImgModal() {
+      document.getElementById('img-modal').classList.add('hidden');
+      if (cropperInst) { cropperInst.destroy(); cropperInst = null; }
+      cropCallback = null;
+    }
+
+    function setCropAspect(ratio) {
+      if (cropperInst) cropperInst.setAspectRatio(ratio ?? NaN);
+      document.querySelectorAll('.crop-aspect-btn').forEach(b => b.classList.remove('active'));
+      const label = ratio == null ? 'free' : ratio === 16/9 ? '16:9' : ratio === 4/3 ? '4:3' : ratio === 1 ? '1:1' : '3:4';
+      document.querySelector(`[data-ratio="${label}"]`)?.classList.add('active');
+    }
+
+    function setCropSize(size) {
+      cropSize = size;
+      document.querySelectorAll('.size-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.toLowerCase().includes(size === 'full' ? '원본' : size === 'small' ? '소' : '중'));
+        b.style.background = b.classList.contains('active') ? '#f97316' : '';
+        b.style.color       = b.classList.contains('active') ? '#fff'    : '';
+        b.style.borderColor = b.classList.contains('active') ? '#f97316' : '';
+      });
+    }
+
+    function confirmCrop() {
+      if (!cropperInst || !cropCallback) return;
+      const sizeMap = { small: 320, medium: 640, full: 0 };
+      const w = sizeMap[cropSize];
+      const canvas = cropperInst.getCroppedCanvas(w > 0 ? { width: w, maxWidth: w } : {});
+      cropCallback(canvas.toDataURL('image/jpeg', 0.88));
+      closeImgModal();
+    }
+
+    /* ── 커버 이미지 처리 ── */
+    function onCoverImageChange(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      openImgModal(file, dataUrl => {
+        coverImageData = dataUrl;
+        document.getElementById('cover-img').src = dataUrl;
+        document.getElementById('cover-preview').classList.remove('hidden');
+      }, 16/9);
+    }
+
+    function clearCoverImage() {
+      coverImageData = null;
+      document.getElementById('form-image').value = '';
+      document.getElementById('cover-preview').classList.add('hidden');
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       QUILL 초기화
+    ═══════════════════════════════════════════════════════ */
+    function initQuill() {
+      if (quill) return;
+      quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        placeholder: '자유롭게 써봐. 툴바로 서식을 넣거나 이미지도 삽입 가능해.',
+        modules: {
+          toolbar: {
+            container: [
+              [{ header: [1, 2, 3, false] }],
+              [{ size: ['small', false, 'large', 'huge'] }],
+              ['bold', 'italic', 'underline', 'strike'],
+              [{ color: [] }, { background: [] }],
+              [{ align: [] }],
+              ['blockquote', 'code-block'],
+              [{ list: 'ordered' }, { list: 'bullet' }],
+              ['link', 'image'],
+              ['clean'],
+            ],
+            handlers: {
+              image: () => {
+                const input = document.createElement('input');
+                input.type = 'file'; input.accept = 'image/*';
+                input.onchange = e => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  openImgModal(file, dataUrl => {
+                    const range = quill.getSelection(true);
+                    quill.insertEmbed(range.index, 'image', dataUrl);
+                    quill.setSelection(range.index + 1);
+                  });
+                };
+                input.click();
+              },
+            },
+          },
+        },
+      });
+
+      quill.on('text-change', () => {
+        const len = quill.getLength() - 1;
+        document.getElementById('word-count').textContent = `${Math.max(0, len).toLocaleString()}자`;
+        localStorage.setItem('vibe-draft-content', quill.root.innerHTML);
+      });
     }
 
     /* ═══════════════════════════════════════════════════════
@@ -361,8 +581,7 @@
         Object.entries(MOODS).map(([key, m]) => `
           <button onclick="selectMood('${key}')" data-mood="${key}"
             class="mood-btn text-xs px-3 py-1.5 rounded-lg border font-bold transition-all"
-            style="border-color:#3f3f46;color:#71717a;"
-          >${m.emoji} ${m.label}</button>
+            style="border-color:#3f3f46;color:#71717a;">${m.emoji} ${m.label}</button>
         `).join('');
     }
 
@@ -370,15 +589,8 @@
       activeMood = (activeMood === key) ? null : key;
       document.querySelectorAll('.mood-btn').forEach(btn => {
         const k = btn.dataset.mood, m = MOODS[k];
-        if (k === activeMood) {
-          btn.style.borderColor = m.color;
-          btn.style.color       = m.color;
-          btn.style.background  = m.bg;
-        } else {
-          btn.style.borderColor = '#3f3f46';
-          btn.style.color       = '#71717a';
-          btn.style.background  = '';
-        }
+        if (k === activeMood) { btn.style.borderColor = m.color; btn.style.color = m.color; btn.style.background = m.bg; }
+        else { btn.style.borderColor = '#3f3f46'; btn.style.color = '#71717a'; btn.style.background = ''; }
       });
     }
 
@@ -387,22 +599,22 @@
     ═══════════════════════════════════════════════════════ */
     const router = {
       go(view, id = null) {
-        document.querySelectorAll('.view').forEach(el => {
-          el.classList.add('hidden');
-          el.classList.remove('view-enter');
-        });
+        document.querySelectorAll('.view').forEach(el => { el.classList.add('hidden'); el.classList.remove('view-enter'); });
         const target = document.getElementById(`view-${view}`);
         target.classList.remove('hidden');
-        void target.offsetWidth; // reflow → restart animation
+        void target.offsetWidth;
         target.classList.add('view-enter');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         document.getElementById('progress-bar').style.width = '0';
 
-        if (view === 'list')   actions.fetchList();
+        if (view === 'list') actions.fetchList();
         if (view === 'detail') actions.fetchDetail(id);
-        if (view === 'write')  {
-          editMode = null;
-          renderMoodButtons(); activeMood = null; loadDraft();
+        if (view === 'write') {
+          initQuill();
+          editMode = null; activeMood = null; coverImageData = null;
+          renderMoodButtons();
+          loadDraft();
+          document.getElementById('cover-preview').classList.add('hidden');
           document.getElementById('write-title').textContent = '새로운 기록';
           document.getElementById('btn-submit').innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> 발행하기';
         }
@@ -418,9 +630,11 @@
       const c = localStorage.getItem('vibe-draft-content') ?? '';
       const k = localStorage.getItem('vibe-draft-cat')     ?? '';
       document.getElementById('form-title').value    = t;
-      document.getElementById('form-body').value     = c;
       document.getElementById('form-category').value = k;
-      document.getElementById('word-count').textContent = `${c.length.toLocaleString()}자`;
+      if (quill) {
+        quill.root.innerHTML = c || '';
+        document.getElementById('word-count').textContent = `${Math.max(0, quill.getLength() - 1).toLocaleString()}자`;
+      }
       if (t || c) showToast('임시저장된 글을 불러왔어요.');
     }
 
@@ -435,25 +649,17 @@
       const cats = [...new Set(allPosts.flatMap(p => (p.category ?? '').split(',').map(c => c.trim()).filter(Boolean)))];
       const el = document.getElementById('category-filter');
       if (!cats.length) { el.innerHTML = ''; return; }
-
       const btn = (label, val) => {
         const active = activeCategory === val;
         const onclick = val === null ? `setCategory(null)` : `setCategory('${esc(val)}')`;
         return `<button onclick="${onclick}" class="shrink-0 text-xs px-3 py-1.5 rounded-full font-bold border transition-all ${
-          active
-            ? 'bg-orange-500 text-white border-orange-500'
-            : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400 dark:hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+          active ? 'bg-orange-500 text-white border-orange-500' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400 dark:hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
         }">${esc(label)}</button>`;
       };
-
       el.innerHTML = btn('전체', null) + cats.map(c => btn(c, c)).join('');
     }
 
-    function setCategory(cat) {
-      activeCategory = cat;
-      renderCategoryFilter();
-      applyFilters();
-    }
+    function setCategory(cat) { activeCategory = cat; renderCategoryFilter(); applyFilters(); }
 
     /* ═══════════════════════════════════════════════════════
        SEARCH + FILTER
@@ -463,8 +669,8 @@
       let posts = allPosts;
       if (activeCategory) posts = posts.filter(p => (p.category ?? '').split(',').map(c => c.trim()).includes(activeCategory));
       if (term) posts = posts.filter(p =>
-        (p.title    ?? '').toLowerCase().includes(term) ||
-        (p.content  ?? '').toLowerCase().includes(term) ||
+        (p.title ?? '').toLowerCase().includes(term) ||
+        (p.contentType === 'html' ? stripHtml(p.content) : (p.content ?? '')).toLowerCase().includes(term) ||
         (p.category ?? '').toLowerCase().includes(term)
       );
       renderPostCards(posts);
@@ -475,23 +681,18 @@
     ═══════════════════════════════════════════════════════ */
     function renderPostCards(posts) {
       const el = document.getElementById('post-list');
-      if (!posts.length) {
-        el.innerHTML = '<p class="py-16 text-center text-sm text-zinc-400">기록이 없어요.</p>';
-        return;
-      }
-
+      if (!posts.length) { el.innerHTML = '<p class="py-16 text-center text-sm text-zinc-400">기록이 없어요.</p>'; return; }
       el.innerHTML = posts.map(p => {
         const mood = MOODS[p.mood] ?? null;
         const mc   = mood?.color ?? '#52525b';
         const mb   = mood?.bg    ?? 'transparent';
         const cats = (p.category ?? '').split(',').map(c => c.trim()).filter(Boolean);
-        const rt   = readingTime(p.content);
-        const prev = (p.content ?? '').replace(/[#*`>\[\]!_~\-]/g, '').replace(/\n+/g, ' ').trim().slice(0, 150);
-
+        const rt   = readingTime(p.contentType === 'html' ? stripHtml(p.content) : p.content);
+        const prev = p.contentType === 'html'
+          ? stripHtml(p.content).slice(0, 150)
+          : (p.content ?? '').replace(/[#*`>\[\]!_~\-]/g, '').replace(/\n+/g, ' ').trim().slice(0, 150);
         return `
-          <article
-            onclick="router.go('detail','${esc(p.id)}')"
-            role="button" tabindex="0"
+          <article onclick="router.go('detail','${esc(p.id)}')" role="button" tabindex="0"
             onkeydown="if(event.key==='Enter')router.go('detail','${esc(p.id)}')"
             class="group cursor-pointer rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50/80 dark:hover:bg-zinc-900 transition-all overflow-hidden">
             <div class="h-[2px] w-full" style="background:${mc};"></div>
@@ -507,13 +708,10 @@
               ${prev ? `<p class="text-sm text-zinc-500 line-clamp-2 leading-relaxed mb-3">${esc(prev)}${prev.length >= 150 ? '…' : ''}</p>` : ''}
               <div class="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800">
                 <span class="text-[11px] text-zinc-400 dark:text-zinc-600" style="font-family:'JetBrains Mono',monospace;">${rt}분 읽기</span>
-                <span class="text-[11px] font-bold text-zinc-400 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors flex items-center gap-1">
-                  계속 읽기 <i data-lucide="arrow-right" class="w-3 h-3"></i>
-                </span>
+                <span class="text-[11px] font-bold text-zinc-400 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors flex items-center gap-1">계속 읽기 <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
               </div>
             </div>
-          </article>
-        `;
+          </article>`;
       }).join('');
       lucide.createIcons();
     }
@@ -526,16 +724,11 @@
         <div class="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 overflow-hidden skeleton">
           <div class="h-[2px] bg-zinc-200 dark:bg-zinc-800"></div>
           <div class="p-5 space-y-3">
-            <div class="flex gap-2">
-              <div class="h-5 w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full"></div>
-              <div class="h-5 w-12 bg-zinc-100 dark:bg-zinc-800/50 rounded-full"></div>
-            </div>
+            <div class="flex gap-2"><div class="h-5 w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full"></div></div>
             <div class="h-5 w-3/4 bg-zinc-200 dark:bg-zinc-800 rounded-lg"></div>
             <div class="h-4 w-full bg-zinc-100 dark:bg-zinc-800/50 rounded-lg"></div>
-            <div class="h-4 w-5/6 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg"></div>
           </div>
-        </div>
-      `).join('');
+        </div>`).join('');
     }
 
     /* ═══════════════════════════════════════════════════════
@@ -550,16 +743,11 @@
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const files = await res.json();
           if (!Array.isArray(files)) throw new Error('posts 폴더를 찾을 수 없어요');
-
-          // 최신순 정렬 후 JSON만 필터
           const jsonFiles = files.filter(f => f.name.endsWith('.json')).reverse();
-          allPosts = await Promise.all(
-            jsonFiles.map(async f => {
-              const r = await fetch(f.download_url);
-              return { ...(await r.json()), id: f.name };
-            })
-          );
-
+          allPosts = await Promise.all(jsonFiles.map(async f => {
+            const r = await fetch(f.download_url);
+            return { ...(await r.json()), id: f.name };
+          }));
           document.getElementById('post-stats').textContent = `${allPosts.length}개의 기록`;
           renderCategoryFilter();
           renderPostCards(allPosts);
@@ -582,8 +770,12 @@
           const mood  = MOODS[data.mood] ?? null;
           const mc    = mood?.color ?? '#71717a';
           const cats  = (data.category ?? '').split(',').map(c => c.trim()).filter(Boolean);
-          const rt    = readingTime(data.content);
-          const body  = sanitize(marked.parse(data.content ?? ''));
+          const plainText = data.contentType === 'html' ? stripHtml(data.content) : (data.content ?? '');
+          const rt    = readingTime(plainText);
+          // 리치 텍스트(html) vs 레거시 마크다운
+          const body  = data.contentType === 'html'
+            ? sanitize(data.content ?? '')
+            : sanitize(marked.parse(data.content ?? ''));
           const cover = safeImg(data.image);
 
           el.style.setProperty('--accent', mc);
@@ -614,7 +806,7 @@
               </div>
             </header>
             ${cover ? `<img src="${cover}" alt="커버 이미지" class="w-full aspect-video object-cover rounded-2xl mb-10 border border-zinc-200 dark:border-zinc-800">` : ''}
-            <div class="md">${body}</div>
+            <div class="${data.contentType === 'html' ? 'rh' : 'md'}">${body}</div>
           `;
           lucide.createIcons();
         } catch (e) {
@@ -632,11 +824,29 @@
 
           editMode = { id, sha: file.sha, originalDate: data.date ?? '', originalImage: data.image ?? null };
 
-          // 폼 채우기
+          // Quill 초기화 후 내용 로드
+          initQuill();
+          if (data.contentType === 'html') {
+            quill.root.innerHTML = data.content ?? '';
+          } else {
+            // 레거시 마크다운: plain text로 삽입
+            quill.setText(data.content ?? '');
+          }
+          document.getElementById('word-count').textContent = `${Math.max(0, quill.getLength() - 1).toLocaleString()}자`;
+
           document.getElementById('form-title').value    = data.title    ?? '';
-          document.getElementById('form-body').value     = data.content  ?? '';
           document.getElementById('form-category').value = data.category ?? '';
-          document.getElementById('word-count').textContent = `${(data.content ?? '').length.toLocaleString()}자`;
+
+          // 커버 이미지 미리보기
+          if (data.image) {
+            coverImageData = data.image;
+            const ci = document.getElementById('cover-img');
+            ci.src = data.image;
+            document.getElementById('cover-preview').classList.remove('hidden');
+          } else {
+            coverImageData = null;
+            document.getElementById('cover-preview').classList.add('hidden');
+          }
 
           // 뷰 전환
           document.querySelectorAll('.view').forEach(el => { el.classList.add('hidden'); el.classList.remove('view-enter'); });
@@ -661,46 +871,30 @@
         if (!confirm('정말 삭제할거야? 되돌릴 수 없어.')) return;
         const token = getToken();
         if (!token) return;
-
         try {
-          // SHA 먼저 가져오기
           const metaRes = await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/${CONFIG.postsPath}/${id}`);
           if (!metaRes.ok) throw new Error(`HTTP ${metaRes.status}`);
           const file = await metaRes.json();
-
           const res = await fetch(
             `https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/${CONFIG.postsPath}/${id}`,
-            {
-              method: 'DELETE',
-              headers: { Authorization: `token ${token.trim()}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ message: `delete: ${id}`, sha: file.sha, branch: CONFIG.branch }),
-            }
+            { method: 'DELETE', headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: `delete: ${id}`, sha: file.sha, branch: CONFIG.branch }) }
           );
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.message ?? `HTTP ${res.status}`);
-          }
+          if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message ?? `HTTP ${res.status}`); }
           showToast('삭제 완료.');
           setTimeout(() => router.go('list'), 1000);
-        } catch (e) {
-          showToast(`삭제 실패: ${e.message}`);
-        }
+        } catch (e) { showToast(`삭제 실패: ${e.message}`); }
       },
 
       async submit() {
         const btn     = document.getElementById('btn-submit');
         const title   = document.getElementById('form-title').value.trim();
         const cat     = document.getElementById('form-category').value.trim();
-        const content = document.getElementById('form-body').value.trim();
-        const imgFile = document.getElementById('form-image').files[0];
+        const content = quill ? quill.root.innerHTML : '';
+        const textLen = quill ? quill.getLength() - 1 : 0;
 
-        if (!title)   { showToast('제목을 입력해봐 🙂'); return; }
-        if (!content) { showToast('내용을 입력해봐 🙂'); return; }
-
-        if (imgFile && imgFile.size > 500 * 1024) {
-          showToast('이미지 500KB 이하로 줄여봐 — TinyPNG 추천');
-          return;
-        }
+        if (!title)         { showToast('제목을 입력해봐 🙂'); return; }
+        if (textLen < 1)    { showToast('내용을 입력해봐 🙂'); return; }
 
         const token = getToken();
         if (!token) return;
@@ -710,46 +904,32 @@
 
         try {
           const isEdit   = editMode !== null;
-          const newImage = imgFile ? await fileToBase64(imgFile) : null;
           const fileName = isEdit ? editMode.id : `post-${Date.now()}.json`;
           const payload  = {
-            title, category: cat, content,
+            title, category: cat,
+            content,
+            contentType: 'html',
             mood: activeMood,
-            // 수정 시: 새 이미지 없으면 기존 이미지 유지
-            image: newImage ?? (isEdit ? editMode.originalImage : null),
-            // 수정 시: 원래 날짜 유지 + 수정일 표기
+            image: coverImageData ?? (isEdit ? editMode.originalImage : null),
             date: isEdit
               ? `${editMode.originalDate} (수정됨)`
               : new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }),
           };
-
-          const body = {
-            message: isEdit ? `edit: ${title}` : `post: ${title}`,
-            content: toB64(JSON.stringify(payload, null, 2)),
-            branch:  CONFIG.branch,
-          };
+          const body = { message: isEdit ? `edit: ${title}` : `post: ${title}`, content: toB64(JSON.stringify(payload, null, 2)), branch: CONFIG.branch };
           if (isEdit) body.sha = editMode.sha;
 
           const res = await fetch(
             `https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/${CONFIG.postsPath}/${fileName}`,
-            {
-              method: 'PUT',
-              headers: { Authorization: `token ${token.trim()}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify(body),
-            }
+            { method: 'PUT', headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
           );
-
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.message ?? `HTTP ${res.status}`);
-          }
+          if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message ?? `HTTP ${res.status}`); }
 
           clearDraft();
           showToast(isEdit ? '수정 완료! ✅' : '발행 완료! 🎉');
-          ['form-title', 'form-body', 'form-category'].forEach(id => { document.getElementById(id).value = ''; });
-          document.getElementById('form-image').value = '';
-          activeMood = null;
-          editMode   = null;
+          if (quill) quill.root.innerHTML = '';
+          ['form-title', 'form-category'].forEach(id => { document.getElementById(id).value = ''; });
+          clearCoverImage();
+          activeMood = null; editMode = null;
           setTimeout(() => router.go('list'), 1200);
         } catch (e) {
           console.error(e);
@@ -781,25 +961,15 @@
       router.go('list');
       updateTokenUI();
 
-      // 실시간 검색
       document.getElementById('search-input').addEventListener('input', applyFilters);
+      document.getElementById('form-title').addEventListener('input',    e => localStorage.setItem('vibe-draft-title', e.target.value));
+      document.getElementById('form-category').addEventListener('input', e => localStorage.setItem('vibe-draft-cat',   e.target.value));
 
-      // 글자 수 + 임시저장
-      document.getElementById('form-body').addEventListener('input', e => {
-        const v = e.target.value;
-        document.getElementById('word-count').textContent = `${v.length.toLocaleString()}자`;
-        localStorage.setItem('vibe-draft-content', v);
-      });
-      document.getElementById('form-title').addEventListener('input',    e => localStorage.setItem('vibe-draft-title',   e.target.value));
-      document.getElementById('form-category').addEventListener('input', e => localStorage.setItem('vibe-draft-cat',     e.target.value));
-
-      // 키보드 단축키: Ctrl/Cmd+Enter → 발행
       document.addEventListener('keydown', e => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-          if (!document.getElementById('view-write').classList.contains('hidden')) {
-            actions.submit();
-          }
+          if (!document.getElementById('view-write').classList.contains('hidden')) actions.submit();
         }
+        if (e.key === 'Escape') closeImgModal();
       });
     });
   </script>
